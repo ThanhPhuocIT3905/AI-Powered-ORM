@@ -14,13 +14,32 @@ export default function PlaceIdFetcher({ onFetchSuccess }: FetcherProps) {
     if (!placeId.trim()) return;
 
     setIsFetching(true);
-    // Giả lập loading 1.5 giây né đá ngầm API Google Maps [cite: 13]
-    setTimeout(() => {
+
+    try {
+      // Gọi trực tiếp đến API Route SerpApi vừa viết
+      const response = await fetch('/api/places', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ placeId: placeId.trim() }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        alert('Đồng bộ thành công 5 review thật từ Google Maps vào Database! ');
+        onFetchSuccess(); // Re-fetch lại danh sách ở component cha để hiển thị lên màn hình [cite: 25]
+        setPlaceId('');
+      } else {
+        alert(`Thất bại: ${result.error || 'Vui lòng kiểm tra lại Place ID hoặc API Key'}`);
+      }
+    } catch (error) {
+      console.error('Lỗi kết nối API:', error);
+      alert('Đã xảy ra lỗi kết nối hệ thống.');
+    } finally {
       setIsFetching(false);
-      setPlaceId('');
-      alert('Đã đồng bộ thành công 5 review mới nhất từ Google Maps (Dữ liệu mẫu)!');
-      onFetchSuccess();
-    }, 1500);
+    }
   };
 
   return (
@@ -29,7 +48,7 @@ export default function PlaceIdFetcher({ onFetchSuccess }: FetcherProps) {
       <form onSubmit={handleFetchGoogleMaps} className="flex gap-3">
         <input
           type="text"
-          placeholder="Nhập Google Place ID (Ví dụ: ChIJu0_V8b8ZQjER6X)..."
+          placeholder="Nhập SerpApi data_id (Ví dụ: 0x3142183eef55b4bb:0x1121d102f1d2a1e9)..."
           value={placeId}
           onChange={(e) => setPlaceId(e.target.value)}
           className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
