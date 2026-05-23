@@ -24,11 +24,31 @@ export default function ReviewCard({ review, onStatusChange }: ReviewCardProps) 
 
   const handleGenerateAI = async () => {
     setIsGenerating(true);
-    // Logic gọi API OpenAI /api/ai/generate sẽ làm ở Ngày 2 nằm gọn tại đây 
-    setTimeout(() => {
+
+    try {
+      const response = await fetch('/api/generate-ai', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ reviewId: review.id }),
+      });
+
+      const result = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        alert(`Thất bại: ${result?.error || 'Không thể tạo phản hồi AI'}`);
+        return;
+      }
+
+      onStatusChange();
+    } catch (error) {
+      console.error('Lỗi khi gọi API Generate AI:', error);
+      alert('Đã xảy ra lỗi khi gọi AI.');
+    } finally {
       setIsGenerating(false);
-    }, 2000);
-  };
+    }
+};
 
   return (
     <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm hover:border-slate-300 transition-all">
@@ -67,9 +87,38 @@ export default function ReviewCard({ review, onStatusChange }: ReviewCardProps) 
         )}
 
         {review.ai_responses && (
-          <div className="space-y-2">
+          <div className="space-y-3 mt-2">
             <p className="text-xs font-semibold text-slate-500">AI Gợi ý phản hồi:</p>
-            {/* Giao diện 3 Block option hiển thị ở đây ở Ngày 3 */}
+            
+            {(() => {
+              // Logic phòng ngự: Nếu ai_responses bị lưu nhầm thành dạng chuỗi String, ta tự parse sang Object
+              let responses = review.ai_responses;
+              if (typeof responses === 'string') {
+                try {
+                  responses = JSON.parse(responses);
+                } catch (e) {
+                  return <p className="text-xs text-red-500">Dữ liệu AI bị lỗi định dạng không thể hiển thị.</p>;
+                }
+              }
+
+              // Nếu parse xong hoặc data chuẩn Object rồi thì render ra giao diện [cite: 23]
+              return (
+                <div className="space-y-3">
+                  <div className="rounded-lg border border-slate-200 p-3 bg-slate-50">
+                    <p className="text-xs font-semibold text-slate-700 mb-1">Tiêu chuẩn</p>
+                    <p className="text-sm text-slate-600 leading-relaxed">{responses?.standard || 'Đang cập nhật...'}</p>
+                  </div>
+                  <div className="rounded-lg border border-slate-200 p-3 bg-slate-50">
+                    <p className="text-xs font-semibold text-slate-700 mb-1">Thân thiện</p>
+                    <p className="text-sm text-slate-600 leading-relaxed">{responses?.friendly || 'Đang cập nhật...'}</p>
+                  </div>
+                  <div className="rounded-lg border border-slate-200 p-3 bg-slate-50">
+                    <p className="text-xs font-semibold text-slate-700 mb-1">Khắc phục lỗi</p>
+                    <p className="text-sm text-slate-600 leading-relaxed">{responses?.troubleshooting || 'Đang cập nhật...'}</p>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         )}
       </div>
