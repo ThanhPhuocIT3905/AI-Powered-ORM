@@ -33,7 +33,30 @@
 - [cite_start]**AI báo thành công nhưng UI trống trơn:** Bấm nút sinh AI xong, DB báo cập nhật trạng thái `Resolved` chuẩn chỉnh nhưng giao diện 3 ô gợi ý lại không hiện chữ[cite: 4, 23].
   - [cite_start]*Nguyên nhân:* SDK Gemini trả dữ liệu về dạng một chuỗi String định dạng JSON[cite: 23]. [cite_start]Mình quên không giải nén mà ném thẳng chuỗi này vào cột JSONB của Supabase, làm Frontend không bóc tách được các thuộc tính `.standard`, `.friendly` hay `.troubleshooting`[cite: 23].
   - *Cách mình xử lý:* Tại Backend, mình bọc thêm hàm `JSON.parse()` trước khi lưu vào DB. Ở Frontend (`ReviewCard.tsx`), mình viết thêm một lớp phòng ngự: tự động kiểm tra kiểu dữ liệu, nếu data từ DB bị lưu sai dạng chuỗi thì Client sẽ tự parse ngược lại thành Object. UI lập tức hiển thị mượt mà 100%.
+  
   ### 🎯 [Kế hoạch Ngày 3 — 24/05/2026]
 - Viết thêm API duyệt bài `/api/reviews/approve` và tạo thêm cột `selected_reply` trong Supabase để lưu lại câu trả lời duy nhất được chọn.
 - Chỉnh sửa lại UI hiển thị ở Tab "Đã xử lý" để chỉ render đúng câu phản hồi đã duyệt.
 - Tối ưu lại Prompt để Gemini tự động phản hồi theo đúng ngôn ngữ của khách hàng (Multi-language support).
+
+--- 
+
+### 🤖 [Ngày 3 — 24/05/2026]
+
+#### 1. Việc đã làm được
+- **Chốt luồng Approve:** Viết xong API `/api/reviews/approve` để đổi trạng thái review sang `Resolved` và lưu câu trả lời được duyệt vào Supabase.
+- **Nâng cấp UI:** Sửa component `ReviewCard.tsx`, cho phép click chọn 1 trong 3 câu trả lời (viền đổi màu Indigo) trước khi bấm duyệt.
+- **Làm AI đa ngôn ngữ:** Sửa lại Prompt cho Gemini 2.5 Flash để tự nhận diện ngôn ngữ của khách. Khách viết tiếng Anh/Nhật thì AI sẽ tự động rep lại bằng chính tiếng Anh/Nhật chứ không ép ra tiếng Việt như hôm qua.
+
+#### 2. Lỗi gặp phải & Cách mình fix
+- **Bấm sinh AI xong bị nhảy thẳng vào trạng thái "Đã xử lý":** * *Nguyên nhân:* Do code Backend cũ vừa sinh AI xong đã tự update `status: 'Resolved'` dưới DB, làm Frontend mất luôn menu cho User chọn 1 trong 3.
+  * *Fix:* Bỏ dòng update status ở API sinh AI đi, chỉ lưu data vào cột `ai_responses` và giữ nguyên trạng thái `Pending` để chờ User bấm Approve.
+- **Bấm Approve bị lỗi "Duyệt thất bại" (Network báo lỗi 404 HTML):**
+  * *Nguyên nhân:* Gọi fetch ở Frontend một đường (`/api/reviews/approve`) nhưng đặt tên thư mục ở Backend một nẻo (`/api/approve-reply/route.ts`).
+  * *Fix:* Đổi lại cấu trúc thư mục cho khớp 100% với URL fetch, restart lại server để Next.js xóa cache router là xong.
+- **Lỗi gãy lệnh SQL khi bấm Approve:**
+  * *Nguyên nhân:* Hệ thống cố lưu câu trả lời được chọn vào cột `selected_reply` nhưng bảng `reviews` trên Supabase chưa tạo cột này.
+  * *Fix:* Vào SQL Editor của Supabase chạy lệnh `ALTER TABLE public.reviews ADD COLUMN selected_reply TEXT;` để thêm cột là chạy mượt ngay.
+- **Lỗi SerpApi trả về mảng rỗng (Không tìm thấy review):**
+  * *Nguyên nhân:* Do mình lấy nhầm mã `Google Place ID` ném vào tham số `data_id` của SerpApi.
+  * *Fix:* Lên trang Playground của SerpApi, search địa điểm rồi lấy đúng mã Hex dạng `0x...:0x...` nạp vào ô nhập liệu là có data.

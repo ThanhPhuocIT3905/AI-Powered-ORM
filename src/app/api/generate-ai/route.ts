@@ -52,15 +52,15 @@ export async function POST(request: Request) {
       properties: {
         standard: {
           type: Type.STRING,
-          description: "Phản hồi chuyên nghiệp, lịch sự, trung tính bằng tiếng Việt."
+          description: "Phản hồi chuyên nghiệp, lịch sự, trung tính. Sử dụng chính ngôn ngữ của bài đánh giá."
         },
         friendly: {
           type: Type.STRING,
-          description: "Phản hồi thân thiện, gần gũi, sử dụng ngôn từ ấm áp bằng tiếng Việt."
+          description: "Phản hồi thân thiện, gần gũi, sử dụng ngôn từ ấm áp. Sử dụng chính ngôn ngữ của bài đánh giá."
         },
         troubleshooting: {
           type: Type.STRING,
-          description: "Phản hồi tập trung xin lỗi, nhận trách nhiệm và đưa ra hướng giải quyết cụ thể nếu khách phàn nàn bằng tiếng Việt."
+          description: "Phản hồi tập trung xin lỗi, nhận trách nhiệm và đưa ra hướng giải quyết cụ thể nếu khách phàn nàn. Sử dụng chính ngôn ngữ của bài đánh giá."
         }
       },
       required: ["standard", "friendly", "troubleshooting"],
@@ -69,9 +69,18 @@ export async function POST(request: Request) {
     // Gọi Gemini API sinh phản hồi có cấu trúc (Structured Outputs) 
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash', // Sử dụng model flash thế hệ mới: siêu tốc (< 2 giây) và tối ưu JSON
-      contents: `Dựa trên đánh giá ${reviewData.rating} sao sau đây của khách hàng tên là "${reviewData.author_name}", hãy tạo ra 3 phương án phản hồi tương ứng bằng tiếng Việt.\n\nNội dung review: "${reviewData.content}"`,
-      config: {
-        systemInstruction: 'Bạn là một chuyên gia quản trị danh tiếng (ORM) và chăm sóc khách hàng chuyên nghiệp cho khách sạn/doanh nghiệp.',
+
+      // Sửa lại prompt để Gemini có thể tự nhận diện ngôn ngữ và trả về phản hồi bằng đúng ngôn ngữ đó, đồng thời giữ nguyên định dạng JSON đã yêu cầu
+      contents: `Hãy phân tích kỹ nội dung và ngôn ngữ của đánh giá ${reviewData.rating} sao này từ khách hàng "${reviewData.author_name}":
+  
+        Nội dung đánh giá: "${reviewData.content}"
+    
+        YÊU CẦU BẮT BUỘC: 
+        1. Hãy tự động nhận diện xem khách hàng đang viết bằng ngôn ngữ nào (Tiếng Việt, Tiếng Anh, Tiếng Nhật, Tiếng Hàn,...).
+        2. Tạo ra 3 phương án phản hồi (standard, friendly, troubleshooting) bằng CHÍNH NGÔN NGỮ ĐÓ của khách hàng. Không được tự ý dịch câu phản hồi sang tiếng Việt nếu khách viết bằng tiếng nước ngoài.`,
+        config: {
+          // Sửa lại system instruction để định hướng vai trò đa ngôn ngữ cho Gemini
+        systemInstruction: 'Bạn là một chuyên gia quản trị danh tiếng (ORM) quốc tế, có khả năng phản hồi khách hàng bằng nhiều ngôn ngữ một cách tự nhiên như người bản xứ. Hãy giữ đúng định dạng JSON được yêu cầu.',
         temperature: 0.7,
         // Ép Gemini trả về đúng định dạng JSON khớp với cấu trúc Schema
         responseMimeType: 'application/json',
@@ -100,7 +109,7 @@ export async function POST(request: Request) {
       .from('reviews')
       .update({ 
         ai_responses: aiResponses, // Cấu trúc lưu trữ JSON hoàn toàn không đổi
-        status: 'Resolved' 
+        // status: 'Resolved'  //
       })
       .eq('id', reviewId);
 
