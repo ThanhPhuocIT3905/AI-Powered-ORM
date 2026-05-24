@@ -82,3 +82,30 @@ CREATE TABLE public.reviews (
 
 #### Chạy dự án ở chế độ Development
 - npm run dev
+
+---
+
+## 🧪 Tài nguyên kiểm thử (Sample Data IDs for Testing)
+
+Để thuận tiện cho quá trình chấm bài và test luồng gọi API SerpApi kết hợp AI, mình đã chuẩn bị sẵn danh sách các mã `data_id` thực tế của các địa điểm nổi tiếng tại Đà Nẵng (đã được kiểm tra luồng dữ liệu chạy ổn định 100%):
+
+| Tên địa điểm | Mã `data_id` để nhập vào ô test | Ngôn ngữ review dự kiến | Mục đích test phù hợp |
+| :--- | :--- | :--- | :--- |
+| **Cộng Cà Phê (Đà Nẵng)** | `0x314217000f57260f:0xc032da1776a3c1e9` | Tiếng Việt / Tiếng Anh | Test luồng đồng bộ cơ bản, reviews ngắn gọn. |
+| **Khách sạn Hilton (Đà Nẵng)** | `0x3142183030cc0f53:0x9f7d7927946123f7` | Tiếng Anh / Tiếng Hàn | **Cực tốt để test tính năng Đa ngôn ngữ (Multi-language)** của Gemini. |
+| **Kem bơ Cô Vân (Chợ Bắc Mỹ An)** | `0x3142170d0e90a73b:0x2eef86e7543e55db` | Tiếng Việt (Phong cách local) | Test khả năng xử lý từ ngữ địa phương/thân thiện của AI. |
+
+---
+
+## 📚 Tài liệu tham khảo (References)
+
+Dự án được nghiên cứu và hoàn thiện dựa trên việc đọc hiểu và vận dụng các tài liệu kỹ thuật chính thức sau:
+
+1. **Next.js App Router Docs:** Tra cứu cấu trúc File-system Based Routing để setup chuẩn hệ thống API Route Handler tại thư mục `src/app/api/`.
+   - *Nguồn:* [Next.js Route Handlers Documentation](https://nextjs.org/docs/app/building-your-application/routing/route-handlers)
+2. **Google GenAI SDK (New Releases):** Nghiên cứu cách tích hợp thư viện `@google/genai` mới nhất và cấu hình tính năng **Structured Outputs (`responseSchema`)** để ép mô hình `gemini-2.5-flash` trả về đúng định dạng JSON 3 phương án phản hồi.
+   - *Nguồn:* [Google Gemini Structured Outputs Guide](https://ai.google.dev/gemini-api/docs/structured-output?example=recipe)
+3. **Supabase JavaScript Client:** Sử dụng tài liệu thư viện `@supabase/supabase-js` để tối ưu câu lệnh cập nhật đồng thời (`.update()`) cho cả hai trường `ai_responses` và `status` trong một Request duy nhất.
+   - *Nguồn:* [Supabase Update Data Reference](https://supabase.com/docs/reference/javascript/update)
+4. **SerpApi Google Maps Reviews API:** Khảo sát cấu trúc dữ liệu trả về và cách khai thác tham số `data_id` để thực hiện bypass rào cản chi phí của Google Places API chính chủ.
+   - *Nguồn:* [SerpApi Google Maps Reviews Playground](https://serpapi.com/google-maps-reviews-api)
